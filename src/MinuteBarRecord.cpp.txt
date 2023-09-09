@@ -1,0 +1,108 @@
+//
+// Created by Kaushik Gunda on 04/09/23.
+//
+#include "MinuteBarRecord.h"
+#include <climits>
+#include "backtest_util.h"
+
+/* Constructor for MinuteBarReader
+ *
+ * Opens the csv file and reads the header. *
+ */
+MinuteBarReader::MinuteBarReader(const std::string &file_name) {
+    file.open(file_name);
+    if (!file.is_open()) {
+        std::cerr << "[MinuteBarReader] Failed to open file : " << file_name << std::endl;
+    }
+    getline(file, header);
+}
+
+/* Get the timestamp of the next record available for consumption.
+ * This will give an indication whether to consume the next record or not.
+ */
+Time MinuteBarReader::getNextTimestamp() {
+    if (buffer.empty() && !readRecord())
+        return LLONG_MAX;
+
+    return buffer.front().start_time;
+}
+
+/* Consume a record from the buffer if available. Once consume it is erased
+ * from the reader's buffer.
+ *
+ * @param MinuteBarRecord& r : Record reference to which the conusmed record needs to be assigned.
+ */
+bool MinuteBarReader::consumeRecord(MinuteBarRecord &r) {
+    if (buffer.empty() && !readRecord())
+        return false;
+
+    r = buffer.front();
+    buffer.pop();
+    return true;
+}
+
+/* Read `count` number of lines from the CSV file, and create MinuteBarRecord objects.
+ * Not used at the moment, but created an abstraction for possible future use cases.
+ *
+ * @param count : Number of records to read.
+ */
+int MinuteBarReader::readRecords(int count) {
+    int read_count = 0;
+    while ((read_count < count) && !file.eof()) {
+        if (!readRecord()) break;
+        read_count++;
+    }
+
+    return read_count;
+}
+
+/* Read a line from the CSV file (if still not eof), create MinuteBarRecord and add it to the reader's buffer.
+ * [TODO] Add exception handling.
+ * Parsing could have been done using istringstream instead of strtok, but the former is 4 times slower than latter.
+ */
+bool MinuteBarReader::readRecord() {
+    if (file.eof())
+        return false;
+
+    int idx = 0;
+    MinuteBarRecord r;
+
+    file.getline(parse_buffer, sizeof(parse_buffer));
+    parse_token = strtok(parse_buffer, ",");
+    while (parse_token != nullptr) {
+        switch (idx) {
+            case 0:
+                r.security_id = std::stoi(parse_token);
+                break;
+            case 1:
+                r.start_time = std::stoll(parse_token);
+                break;
+            case 2:
+                // Do not need to store end_time
+                break;
+            case 3:
+                r.price = std::stod(parse_token);
+                break;
+            case 4:
+                r.spread = std::stod(parse_token);
+                break;
+            case 5:
+                r.volume = std::stod(parse_token);
+                break;
+            default:
+                break;
+        }
+        idx++;
+        parse_token = strtok(nullptr, ",");
+    }
+
+    buffer.push(r);
+    return true;
+}
+
+/*
+ * Print the header read from the CSV file, just a customary function.
+ */
+void MinuteBarReader::printHeader() {
+    std::cout << header << std::endl;
+}

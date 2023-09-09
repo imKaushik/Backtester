@@ -1,0 +1,56 @@
+Data classes :
+  1. MinuteDataRecord : {security_id, start_time, end_time, price, spread, volume};
+  2. TargetPositionRecord : {security_id, start_time, end_time, target_position};
+  3. FillRecord : {fill_quantity, fill_time, fill_price};
+  4. PnLRecord : {cash, position}
+  5. DayMarketData : {security_id,
+                      array<1440, MinuteDataRecordPointers>,
+                      avg_price(start_time, end_time),
+                      avg_spread(start_time, end_time),
+                      get_minute_data(time),
+                      // Internal logic to map from epoch time to appropriate array record.
+                     }
+  6. FillManager : {security_id,
+                    vector<FillRecord>}
+ 
+Major Classes :
+  1. SecurityMap
+     a. map from id to pointer of Security objects.
+     b. load_market_data(mdr, curr_time, end_time);
+     c. dump_data()
+  2. Security:
+     a. Id
+     b. dayMarketData object/pointer
+     c. fillManager object/pointer
+  3. ExecutionLogic Abstract class wtih just execute function
+  4. ExecutionLogic1 implements the execute function.
+  5. Backetest: The main class to use all the above.
+ 
+  Backtest::execute (MinuteDataReader& mdr, TargetPositionReader& tpr, Strategy& s) {
+      SecurityMap sm;
+      TargetPositionRecord tpd;
+ 
+      long long curr_time;
+      while (!tpr.close()) {
+          curr_time = tpr.read_top_timestamp(); // give start timestamp
+          end_time = next_day/next_week/next_month(curr_time); // Start of next day. if curr_time is 02:10:11 on 1st Jun, end_time is 12:00 2nd Jun.
+          sm.load_market_data(mdr, end_time) // loads all entries for this day into Security Map.
+ 
+          while (curr_time < end_time) {
+               tpr.top_req(&tpd);
+               s.execute(tpd, sm[tpd.security_id]);
+               curr = tpr.read_top_timestamp();
+          }
+ 
+          sm.post_process(); // Dump the fills, clear the current days market data.
+      }
+  }
+ 
+  int main()
+  {
+      MinuteDataReader mdr(x.csv); // This reads the header
+      TargetPositionReader tpr(y.csv); // This reads the header
+      Strategy s();
+      Backtest(mdr, tpr, s).execute();
+  }
+ 
