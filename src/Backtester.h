@@ -11,6 +11,15 @@
 #include "CSVReader.h"
 #include "ExecutionAlgorithm.h"
 
+#include <functional>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
+#include <unordered_map>
+#include <future>
+#include <vector>
+#include <queue>
+
 /*
  * Backtester : The central block which joins data and the strategy.
  * It is given object references of the all the needed, without any implementation details.
@@ -49,11 +58,22 @@ public:
 
 private:
 
+    // Submitting target records to the algorithm parallelly using std::async,
+    //(which mostly uses a thread pool).
+
+    bool
+    invoke_strategy(TargetPositionRecord &record, MarketDataManager &market_data_manager, FillManager &fill_manager,
+                    PortfolioManager &portfolio_manager);
+
     MarketDataManager market_data_manager;
     FillManager fill_manager;
     PortfolioManager portfolio_manager;
     TargetPositionReader target_position_reader;
     ExecutionAlgorithm *algorithm;
+
+    // For parallel implementation - explanation in cpp file.
+    std::unordered_map<SecurityId, std::priority_queue<long long, std::vector<long long>, std::greater<long long>>> pq_map;
+    std::unordered_map<SecurityId, std::condition_variable> cv_map;
 };
 
 #endif //CUBIST_BACKTESTER_H
