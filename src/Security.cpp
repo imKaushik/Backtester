@@ -76,8 +76,9 @@ bool Security::addFill(Fill &&record) {
     return true;
 }
 
-void Security::postProcessFill()
+void Security::postProcessFill(const std::string& file_name)
 {
+    fills.dump(file_name);
     week = 0;
     fills.clear();
 }
