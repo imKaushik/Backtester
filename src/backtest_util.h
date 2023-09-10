@@ -5,6 +5,9 @@
 #ifndef CUBIST_BACKTEST_UTIL_H
 #define CUBIST_BACKTEST_UTIL_H
 
+#include <cmath>
+#include <cstring>
+
 /*
  * Has important constants, macros and helper functions.
  */
