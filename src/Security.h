@@ -54,7 +54,7 @@ private:
     bool addFill(Fill&& record);
 
     // (Dump&) Clean up the fill for this week.
-    void postProcessFill();
+    void postProcessFill(const std::string& file_name);
 
     /* cash, position and pnl related methods. */
 

@@ -86,8 +86,6 @@ private:
     std::unique_ptr<MarketDataReader> market_data_reader;
     WeekIntervalData<PnLRecord> strategy_pnl;
     std::string output_dir;
-    // Maintain fills output stream, as and when one is recorded, add to it.
-    std::ofstream fill_stream;
 
     // Can be only invoked by proxy objects.
     friend class MarketDataManager;

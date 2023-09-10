@@ -23,7 +23,6 @@ void SecurityUniverse::loadMarketData(Week week) noexcept(false) {
     }
 
     this->week = week;
-    fill_stream.open(output_dir + "/fills/" + std::to_string(week));
 
     Time next_time;
     MinuteBarRecord record;
@@ -57,18 +56,11 @@ void SecurityUniverse::postProcessMarketData()
 
 // Push a new fill record.
 bool SecurityUniverse::addFill(Fill &&record) {
-    if (fill_stream.is_open()) {
-        fill_stream << record.str() << std::endl;
-    }
     return get(record.security_id)->addFill(std::move(record));
 }
 
 // Push a new fill record.
 bool SecurityUniverse::addFill(Fill &record) {
-    // As and when you get a record, flush it to fill stream.
-    if (fill_stream.is_open()) {
-        fill_stream << record.str() << std::endl;
-    }
     return get(record.security_id)->addFill(record);
 }
 
@@ -77,9 +69,8 @@ void SecurityUniverse::postProcessFill()
 {
     // As and when you get a record, flush it to fill stream.
 	std::for_each(std::execution::par_unseq, smap.begin(), smap.end(),
-			[](const std::pair<SecurityId, Security*> &security)
-			{ security.second->postProcessFill(); });
-    fill_stream.close();
+			[this](const std::pair<SecurityId, Security*> &security)
+			{ security.second->postProcessFill(this->output_dir + "/fills/" + std::to_string(security.first)); });
 }
 
 // Security fetch method
@@ -94,7 +85,6 @@ void SecurityUniverse::setOutputDir(const std::string &output_dir) {
     this->output_dir = output_dir;
     std::filesystem::remove_all(output_dir);
     std::filesystem::create_directories(output_dir + "/fills/");
-    std::filesystem::create_directories(output_dir + "/strategy_pnl/");
 }
 
 /* PnL and related methods*/
@@ -138,7 +128,7 @@ Quantity SecurityUniverse::getLatestPosition(SecurityId security_id) const
 
 void SecurityUniverse::dumpStrategyPnl()
 {
-    strategy_pnl.dump(output_dir + "/strategy_pnl/" + std::to_string(week));
+    strategy_pnl.dump(output_dir + "/strategy_pnl");
 }
 
 // Compute PnL of the strategy, dump it and clear all related information.
