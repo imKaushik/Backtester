@@ -29,8 +29,8 @@ void Backtester::execute() {
             TargetPositionRecord record;
             target_position_reader.consumeRecord(record);
 
-            // Preprocessing before submitting to layer over std::async - read description of invoke_strategy
-            cv_map[record.security_id];
+            // Preprocessing before submitting to algorithm,  read description of invoke_strategy
+            cv_map[record.security_id][record.arrival_time];
             pq_map[record.security_id].push(record.arrival_time);
 
             futures.push_back(std::async(std::launch::async,
@@ -54,7 +54,7 @@ void Backtester::execute() {
 
 /*
  * Submitting target records to the algorithm parallely using std::async,
- * (which mostly uses a thread pool).
+ * (which mostly uses a thread pool). See how invoke_strategy is used above.
  * To ensure correct processing, we need the following:
  * - No two records of the same security should be processed at the same time.
  * - Records of the same security should be processed according to the arrival time.
@@ -70,7 +70,7 @@ bool Backtester::invoke_strategy(TargetPositionRecord &record, MarketDataManager
     std::mutex m;
     std::unique_lock<std::mutex> lock(m);
 
-    cv_map[security_id].wait(lock, [&]() {
+    cv_map[security_id][record.arrival_time].wait(lock, [&]() {
         return !pq_map[security_id].empty() && record.arrival_time == pq_map[security_id].top();
     });
 
@@ -84,7 +84,11 @@ bool Backtester::invoke_strategy(TargetPositionRecord &record, MarketDataManager
 
     pq_map[security_id].pop();
     m.unlock();
-    cv_map[security_id].notify_all();
+
+    cv_map[security_id].erase(record.arrival_time);
+    if (!pq_map[security_id].empty()) {
+        cv_map[security_id][pq_map[security_id].top()].notify_one();
+    }
 
     return true;
 }

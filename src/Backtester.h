@@ -58,12 +58,11 @@ public:
 
 private:
 
-    // Submitting target records to the algorithm parallelly using std::async,
-    //(which mostly uses a thread pool).
+ /*Submitting target records to the algorithm parallely using std::async,
+ * (which mostly uses a thread pool).
+ */
 
-    bool
-    invoke_strategy(TargetPositionRecord &record, MarketDataManager &market_data_manager, FillManager &fill_manager,
-                    PortfolioManager &portfolio_manager);
+    bool invoke_strategy(TargetPositionRecord& record, MarketDataManager& market_data_manager, FillManager& fill_manager, PortfolioManager& portfolio_manager);
 
     MarketDataManager market_data_manager;
     FillManager fill_manager;
@@ -72,8 +71,11 @@ private:
     ExecutionAlgorithm *algorithm;
 
     // For parallel implementation - explanation in cpp file.
+    // Min Heap to store the pending requests associated with a security id, ordered by time.
     std::unordered_map<SecurityId, std::priority_queue<long long, std::vector<long long>, std::greater<long long>>> pq_map;
-    std::unordered_map<SecurityId, std::condition_variable> cv_map;
+    // Map from SecurityId->[TimeStamp]->cv.
+    std::unordered_map<SecurityId, std::unordered_map<Time, std::condition_variable>> cv_map;
+
 };
 
 #endif //CUBIST_BACKTESTER_H
