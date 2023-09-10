@@ -38,5 +38,6 @@ add_executable(Cubist main.cpp
         PortfolioSnapshot.cpp
         PnLRecord.h
         PnLRecord.cpp
+        ArgParser.h
 )
 target_link_libraries(Cubist)

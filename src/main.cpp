@@ -6,19 +6,25 @@
 #include "Backtester.h"
 #include "XYAlgorithm.h"
 #include "SecurityUniverse.h"
+#include "ArgParser.h"
 #include <climits>
 
-int main() {
+int main(int argc, char* argv[]) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    MarketDataManager mdm("/Users/apple/Macbook Non-iCloud/Playground/Cubist/cpp_project/bar_data.csv");
+    double X,Y;
+    std::string input_dir, output_dir;
+
+    parse(argc, argv, X, Y, input_dir, output_dir);
+
+    MarketDataManager mdm(input_dir + "/bar_data.csv");
     FillManager fm;
     PortfolioManager pm;
     XYAlgorithm strategy(0.5, 0.5);
-    SecurityUniverse::getInstance().setOutputDir("/Users/apple/Macbook Non-iCloud/Playground/Cubist/output_dir/");
+    SecurityUniverse::getInstance().setOutputDir(output_dir);
 
     Backtester backtest(mdm, fm, pm,
-                         "/Users/apple/Macbook Non-iCloud/Playground/Cubist/cpp_project/target_positions.csv",
+                         input_dir + "/target_positions.csv",
                          &strategy);
 
     backtest.execute();
