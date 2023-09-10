@@ -1,0 +1,8 @@
+
+Instructions to run:
+1. Ensure you have cmake version greater than 3.26.1
+2. Ensure you have the latest version of g++
+3. Once you have access to the repository, go to src/cmake-build-release and run "cmake <absolute path of the source directory>"
+4. Change any hardcoded file locations in main.cpp to your absolute paths.
+5. Then go to TOPDIR, and run "cmake --build "src/cmake-build-release" --target Cubist -j 6"
+5. Run src/cmake-build-release/Cubist.
