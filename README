@@ -1,6 +1,6 @@
 
 Instructions to run:
-1. Ensure you have cmake version at least >= 3.12
+1. Ensure you have cmake version at least >= 3.26
 2. Ensure you have the latest g++ version (I test on 10.2.1)
 3. Once you have the repository checked out, run ‘cmake -S src -B build’ from TOPDIR. This generates the build tree. Only need to run once, for the first you are using the repo.
 4. Build : cmake --build build --target Cubist -j 6
