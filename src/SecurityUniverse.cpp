@@ -48,9 +48,9 @@ void SecurityUniverse::loadMarketData(Week week) noexcept(false) {
 // Clean up market info for all securities.
 void SecurityUniverse::postProcessMarketData()
 {
-    for (auto& [security_id, security] : smap) {
-        security->postProcessMarketData();
-    }
+    std::for_each(std::execution::par_unseq, smap.begin(), smap.end(),
+		  [](const std::pair<SecurityId, Security*>& security)
+		  { security.second->postProcessMarketData(); });
 }
 
 /* Fill related methods*/
@@ -76,9 +76,9 @@ bool SecurityUniverse::addFill(Fill &record) {
 void SecurityUniverse::postProcessFill()
 {
     // As and when you get a record, flush it to fill stream.
-    for (auto& [security_id, security] : smap) {
-        security->postProcessFill();
-    }
+	std::for_each(std::execution::par_unseq, smap.begin(), smap.end(),
+			[](const std::pair<SecurityId, Security*> &security)
+			{ security.second->postProcessFill(); });
     fill_stream.close();
 }
 
@@ -102,14 +102,12 @@ void SecurityUniverse::setOutputDir(const std::string &output_dir) {
 // Computes strategy PnL
 void SecurityUniverse::computeStrategyPnl() {
     // Compute Every instrument's PnL
-    for (auto security: smap) {
-        security.second->computePnL();
-    }
+    std::for_each(std::execution::par_unseq, smap.begin(), smap.end(),
+                  [](const std::pair<SecurityId, Security *> &security)
+                  { security.second->computePnL(); });
 
     // Compute Strategy PnL
-    PnLRecord security_pnl;
 
-    // Crude, but this can be made parallel in the future, so good.
 
     for (int day = START_DAY; day <= END_DAY; day++) {
 
@@ -118,16 +116,15 @@ void SecurityUniverse::computeStrategyPnl() {
         for (int minute = START_MINUTE; minute <= END_MINUTE; minute++) {
             Time curr_time = first_epoch + minute * NANOSECONDS_PER_MINUTE;
 
-            Price final_pnl = 0;
+            PnL final_pnl = 0;
 
-            for (auto& [security_id, security] : smap) {
-                // No need to check if it's invalid, we ensure every security
-                // has pnl computed for every trading minute of the week.
+            final_pnl = std::reduce(std::execution::par_unseq, smap.begin(), smap.end(), final_pnl,
+                                        [curr_time](PnL accumulated, const auto &security) {
+                                            PnLRecord security_pnl;
+                                            security.second->getPnL(curr_time, security_pnl);
+                                            return accumulated + security_pnl.pnl;
+                                        });
 
-                security->getPnL(curr_time, security_pnl);
-
-                final_pnl += security_pnl.pnl;
-            }
             strategy_pnl.insertRecord(curr_time, PnLRecord(final_pnl, curr_time));
         }
     }
@@ -149,8 +146,8 @@ void SecurityUniverse::postProcessPortfolio()
 {
     computeStrategyPnl();
     dumpStrategyPnl();
-    for (auto& [security_id, security] : smap) {
-        security->postProcessPortfolio();
-    }
+    std::for_each(std::execution::par_unseq, smap.begin(), smap.end(),
+		    [](const auto& security)
+		    { security.second->postProcessPortfolio(); });
     strategy_pnl.clear();
 }
