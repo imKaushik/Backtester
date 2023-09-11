@@ -29,10 +29,12 @@ void Backtester::execute() {
             TargetPositionRecord record;
             target_position_reader.consumeRecord(record);
 
-            // Preprocessing before submitting to algorithm,  read description of invoke_strategy
-            cv_map[record.security_id][record.arrival_time];
-            pq_map[record.security_id].push(record.arrival_time);
-
+            {
+                std::lock_guard<std::mutex> lock(write_mutex_map[record.security_id]);
+                // Preprocessing before submitting to algorithm,  read description of invoke_strategy
+                cv_map[record.security_id][record.arrival_time];
+                pq_map[record.security_id].push(record.arrival_time);
+            }
             futures.push_back(std::async(std::launch::async,
                                          std::bind(&Backtester::invoke_strategy, this, record, market_data_manager,
                                                    fill_manager, portfolio_manager)));
@@ -44,7 +46,8 @@ void Backtester::execute() {
 
         futures.clear();
         cv_map.clear();
-
+        write_mutex_map.clear();
+        pq_map.clear();
         // Order of the following is important.
         portfolio_manager.postProcess();
         fill_manager.postProcess();
@@ -71,6 +74,7 @@ bool Backtester::invoke_strategy(TargetPositionRecord &record, MarketDataManager
     std::unique_lock<std::mutex> lock(m);
 
     cv_map[security_id][record.arrival_time].wait(lock, [&]() {
+        std::lock_guard<std::mutex> lock(write_mutex_map[security_id]);
         return !pq_map[security_id].empty() && record.arrival_time == pq_map[security_id].top();
     });
 
@@ -82,12 +86,12 @@ bool Backtester::invoke_strategy(TargetPositionRecord &record, MarketDataManager
         LOG("Processed target position record successfully : " << record.str());
     }
 
-    pq_map[security_id].pop();
-    m.unlock();
-
-    cv_map[security_id].erase(record.arrival_time);
-    if (!pq_map[security_id].empty()) {
-        cv_map[security_id][pq_map[security_id].top()].notify_one();
+    {
+        std::lock_guard<std::mutex> lock(write_mutex_map[security_id]);
+        pq_map[security_id].pop();
+        if (!pq_map[security_id].empty()) {
+            cv_map[security_id][pq_map[security_id].top()].notify_one();
+        }
     }
 
     return true;

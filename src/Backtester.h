@@ -75,6 +75,8 @@ private:
     std::unordered_map<SecurityId, std::priority_queue<long long, std::vector<long long>, std::greater<long long>>> pq_map;
     // Map from SecurityId->[TimeStamp]->cv.
     std::unordered_map<SecurityId, std::unordered_map<Time, std::condition_variable>> cv_map;
+    // Updating of priority map should be done in this mutex
+    std::unordered_map<SecurityId, std::mutex> write_mutex_map;
 
 };
 
