@@ -40,4 +40,4 @@ add_executable(Cubist main.cpp
         PnLRecord.cpp
         ArgParser.h
 )
-target_link_libraries(Cubist)
+target_link_libraries(Cubist PRIVATE pthread)
