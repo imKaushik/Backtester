@@ -86,7 +86,7 @@ bool XYAlgorithm::execute(const TargetPositionRecord &target_record,
         Quantity fill_quantity = fmin(target_left, Y * minute_record.volume / 100);
 
         // If you get anything, push it to fills.
-        if (fill_quantity > 0) {
+        if (fill_quantity * trade_price > 0) {
             Time fill_time = curr_time - target_record.arrival_time;
             if (!fill_manager.addFill(Fill(security_id,
                                            curr_time - target_record.arrival_time,
