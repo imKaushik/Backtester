@@ -24,7 +24,7 @@ bool Security::addMarketData(MinuteBarRecord &&record) {
     if (market_data.insertRecord(record.start_time, std::move(record))) {
         LOG("[Security] Inserted minute bar data successfully : " << record.str());
     } else {
-        std::cerr << "[Security] Failed to insert minute bar data : " << record.str();
+        ERROR("[Security] Failed to insert minute bar data  : " << record.str());
         return false;
     }
     return true;
