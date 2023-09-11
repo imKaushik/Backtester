@@ -24,7 +24,7 @@ Price XYAlgorithm::calculateTradePrice(SecurityId security_id, Time start_time, 
         cum_spread += minute_record.spread;
         count++;
     }
-    return cum_price / count + X * ((cum_spread / count) / 100);
+    return count == 0 ? 0 : cum_price / count + X * ((cum_spread / count) / 100);
 }
 
 /*
